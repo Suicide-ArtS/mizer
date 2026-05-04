@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mizer | AI Economy</title>
-    <!-- SDK Telegram, чтобы приложение понимало, что оно внутри мессенджера -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <style>
@@ -14,6 +13,7 @@
             --mizer-cyan: #00d2ff;
             --mizer-gold: #f2a900;
             --card-bg: #232e3c;
+            --ai-glow: rgba(0, 210, 255, 0.2);
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -25,29 +25,41 @@
         }
         .container { max-width: 400px; margin: 0 auto; }
         
-        /* Шапка с балансом */
-        .header { text-align: center; margin-bottom: 25px; padding-top: 10px; }
+        .header { text-align: center; margin-bottom: 25px; }
         .logo { 
             width: 70px; height: 70px; 
             background: linear-gradient(135deg, var(--mizer-cyan), #0080ff);
             border-radius: 20px; margin: 0 auto 15px;
             display: flex; align-items: center; justify-content: center;
             font-size: 35px; font-weight: 900; color: #000;
-            box-shadow: 0 8px 25px rgba(0,210,255,0.3);
+            box-shadow: 0 0 20px var(--ai-glow);
             cursor: pointer;
         }
-        .balance { font-size: 40px; font-weight: 800; margin: 5px 0; letter-spacing: -1px; }
-        .mzr-label { color: var(--mizer-gold); font-size: 18px; margin-left: 5px; }
+        .balance { font-size: 40px; font-weight: 800; margin: 5px 0; }
+        .mzr-label { color: var(--mizer-gold); font-size: 18px; }
 
-        /* Карточки действий */
         .card {
             background: var(--card-bg);
-            border-radius: 24px; padding: 20px;
+            border-radius: 24px; padding: 18px;
             margin-bottom: 16px;
             border: 1px solid rgba(255,255,255,0.05);
         }
-        h3 { margin: 0 0 15px 0; font-size: 16px; opacity: 0.8; }
-        
+
+        /* AI Terminal Style */
+        .ai-terminal {
+            background: #101921;
+            border: 1px solid var(--mizer-cyan);
+            box-shadow: inset 0 0 10px var(--ai-glow);
+            min-height: 100px;
+            margin-bottom: 12px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: var(--mizer-cyan);
+            border-radius: 15px;
+        }
+        .ai-status { font-size: 10px; text-transform: uppercase; margin-bottom: 5px; opacity: 0.7; }
+
         .input-mizer {
             width: 100%; background: #101921; border: 1px solid #3d4b59;
             border-radius: 14px; padding: 14px; color: #fff;
@@ -58,100 +70,74 @@
             font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 16px;
         }
         .btn-primary { background: var(--mizer-cyan); color: #000; }
-        .btn-primary:active { transform: scale(0.97); }
+        .btn-ai { background: transparent; border: 1px solid var(--mizer-cyan); color: var(--mizer-cyan); }
+        .btn:active { transform: scale(0.97); }
 
-        /* Админка (скрытая) */
         #admin-panel { 
             display: none; position: fixed; inset: 0; 
             background: rgba(10, 15, 20, 0.98);
             z-index: 100; padding: 30px; backdrop-filter: blur(15px);
         }
-        .stat-line { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-
-    <div class="card" style="border: 1px solid var(--mizer-cyan);">
-        <h3 style="color: var(--mizer-cyan);">AI Регулятор v1.0</h3>
-        <div id="ai-chat-box" style="height: 100px; overflow-y: auto; font-size: 13px; background: #101921; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px inset #2b3948;">
-            <div style="color: #00d2ff;">[SYSTEM]: Жду отчет о выполненной работе...</div>
-        </div>
-        <input type="text" id="ai-report" class="input-mizer" placeholder="Что ты сделал полезного?">
-        <button class="btn btn-primary" onclick="app.askAI()">Отправить на анализ</button>
-    </div>
-    
     <div class="header">
-        <!-- Кликнуть 5 раз для входа в админку -->
         <div class="logo" id="main-logo">M</div>
         <div class="balance" id="view-bal">0.00 <span class="mzr-label">MZR</span></div>
         <div id="view-addr" style="font-size: 10px; opacity: 0.4; font-family: monospace;"></div>
     </div>
 
-    <!-- Переводы -->
-    <div class="card">
-        <h3>Отправить перевод</h3>
-        <input type="text" id="to-addr" class="input-mizer" placeholder="Адрес (MZR-...)">
-        <input type="number" id="send-amt" class="input-mizer" placeholder="Сумма">
-        <button class="btn btn-primary" onclick="app.send()">Отправить MZR</button>
+    <!-- AI СОВЕТНИК -->
+    <div class="card" style="border: 1px solid var(--mizer-cyan);">
+        <div class="ai-status">● Mizer AI Oracle v1.0</div>
+        <div class="ai-terminal" id="ai-chat">Приветствую. Опишите выполненную работу для получения гранта из казны.</div>
+        <input type="text" id="ai-input" class="input-mizer" placeholder="Сегодня я сделал...">
+        <button class="btn btn-ai" onclick="app.askAI()">Отправить на анализ</button>
     </div>
 
-    <!-- AI Система -->
+    <!-- ПЕРЕВОДЫ -->
     <div class="card">
-        <h3>AI Награда</h3>
-        <p style="font-size: 12px; color: #8a99a8; margin-bottom: 12px;">Введи секретный код от ИИ для начисления:</p>
-        <input type="text" id="ai-code" class="input-mizer" placeholder="Код из бота">
-        <button class="btn" style="background: #2b3948; color: #fff;" onclick="app.claim()">Активировать</button>
+        <h3 style="margin:0 0 15px 0; font-size: 14px; opacity: 0.6;">Перевод по адресу</h3>
+        <input type="text" id="to-addr" class="input-mizer" placeholder="MZR-...">
+        <input type="number" id="send-amt" class="input-mizer" placeholder="Сумма">
+        <button class="btn btn-primary" onclick="app.send()">Подтвердить перевод</button>
     </div>
 </div>
 
 <!-- Скрытая Админка -->
 <div id="admin-panel">
-    <h2 style="color: var(--mizer-gold); margin-bottom: 20px;">УПРАВЛЕНИЕ КАЗНОЙ</h2>
-    <div class="card" style="background: rgba(255,255,255,0.05)">
-        <div class="stat-line">В обороте: <b id="stat-supply">0</b></div>
-        <div class="stat-line">Транзакций: <b id="stat-blocks">0</b></div>
-    </div>
-    
-    <h3>Эмиссия (Печать MZR)</h3>
-    <input type="number" id="mint-amt" class="input-mizer" placeholder="Сумма выпуска">
-    <button class="btn btn-primary" onclick="app.mint()">Минт в казну</button>
-    
-    <button class="btn" style="margin-top:20px; background: #ef4444; color: #fff;" onclick="app.closeAdmin()">Закрыть</button>
+    <h2 style="color: var(--mizer-gold)">ROOT ACCESS</h2>
+    <p id="stat-info" style="font-size: 12px;"></p>
+    <input type="number" id="mint-amt" class="input-mizer" placeholder="Сумма эмиссии">
+    <button class="btn btn-primary" onclick="app.mint()">Напечатать монеты</button>
+    <button class="btn" style="margin-top:20px" onclick="app.closeAdmin()">Выход</button>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
-    tg.headerColor = '#17212b';
 
-    // Подключаемся к P2P-сети Mizer
     const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-    const mzrNet = gun.get('mizer_p2p_network_final_v1');
+    const mzrNet = gun.get('mizer_p2p_network_ai_v2');
 
     const app = {
-        // Если открыто в телеге — берем ID юзера, если нет — гость
-        user: tg.initDataUnsafe.user || { id: 'GUEST_' + Math.floor(Math.random()*1000) },
-        addr: '', 
-        chain: [], 
-        taps: 0,
+        user: tg.initDataUnsafe.user || { id: 'LOCAL_DEV' },
+        addr: '', chain: [], taps: 0, 
+        isTyping: false,
 
         init() {
             this.addr = "MZR-" + this.user.id;
-            document.getElementById('view-addr').innerText = "ADDRESS: " + this.addr;
+            document.getElementById('view-addr').innerText = this.addr;
             
-            // Скрытый вход в админку
             document.getElementById('main-logo').onclick = () => {
                 this.taps++;
                 if(this.taps >= 5) {
-                    const pass = prompt("Введите ROOT-пароль:");
-                    if(pass === "mizer77") document.getElementById('admin-panel').style.display = 'block';
-                    this.taps = 0;
+                    const p = prompt("Password:");
+                    if(p === "mizer77") document.getElementById('admin-panel').style.display = 'block';
                 }
-                setTimeout(() => this.taps = 0, 3000); // Сброс тапов через 3 сек
             };
-
             this.sync();
         },
 
@@ -173,40 +159,66 @@
                 if(b.from === "KAZNA") supply += a;
             });
             document.getElementById('view-bal').innerHTML = bal.toFixed(2) + ' <span class="mzr-label">MZR</span>';
-            document.getElementById('stat-supply').innerText = supply.toFixed(0) + " MZR";
-            document.getElementById('stat-blocks').innerText = this.chain.length;
+            document.getElementById('stat-info').innerText = `В обороте: ${supply} | Транзакций: ${this.chain.length}`;
+        },
+
+        // ЛОГИКА ИИ
+        askAI() {
+            if(this.isTyping) return;
+            const text = document.getElementById('ai-input').value.toLowerCase();
+            const chat = document.getElementById('ai-chat');
+            
+            if(text.length < 10) {
+                this.typeAI("Слишком короткий отчет. ИИ требует подробностей.");
+                return;
+            }
+
+            this.typeAI("Анализирую вклад в экосистему...");
+            
+            setTimeout(() => {
+                // Простая проверка "на вшивость"
+                const keywords = ['сделал', 'работа', 'код', 'дизайн', 'помог', 'отчет', 'mizer'];
+                const found = keywords.some(word => text.includes(word));
+
+                if(found) {
+                    const reward = Math.floor(Math.random() * 40) + 10; // От 10 до 50
+                    this.typeAI(`Анализ завершен. Ценность подтверждена. Начислено: ${reward} MZR.`);
+                    this.pushBlock("KAZNA", this.addr, reward, "AI_GRANT");
+                } else {
+                    this.typeAI("Ошибка: Сообщение не содержит данных о полезной деятельности. Грант отклонен.");
+                }
+                document.getElementById('ai-input').value = '';
+            }, 2000);
+        },
+
+        typeAI(msg) {
+            this.isTyping = true;
+            const chat = document.getElementById('ai-chat');
+            chat.innerText = '';
+            let i = 0;
+            const interval = setInterval(() => {
+                chat.innerText += msg[i];
+                i++;
+                if(i >= msg.length) {
+                    clearInterval(interval);
+                    this.isTyping = false;
+                }
+            }, 30);
         },
 
         send() {
             const to = document.getElementById('to-addr').value;
             const amt = parseFloat(document.getElementById('send-amt').value);
-            const currentBal = parseFloat(document.getElementById('view-bal').innerText);
-
-            if(!to || isNaN(amt) || amt <= 0) return alert("Некорректные данные");
-            if(amt > currentBal) return alert("Недостаточно MZR!");
-            
-            this.pushBlock(this.addr, to, amt, "TRANSFER");
-            document.getElementById('send-amt').value = '';
-            alert("Успешно отправлено!");
-        },
-
-        claim() {
-            const code = document.getElementById('ai-code').value;
-            // Простейшая проверка кода. В будущем тут будет сверка с ИИ-базой
-            if(code.startsWith("MZR_AI_")) {
-                this.pushBlock("KAZNA", this.addr, 50, "AI_REWARD");
-                alert("ИИ подтвердил вашу пользу! +50 MZR");
-                document.getElementById('ai-code').value = '';
-            } else {
-                alert("Код не прошел проверку ИИ.");
+            if(amt > 0 && to) {
+                this.pushBlock(this.addr, to, amt, "SEND");
+                alert("Отправлено!");
             }
         },
 
         mint() {
             const amt = parseFloat(document.getElementById('mint-amt').value);
-            if(isNaN(amt) || amt <= 0) return;
-            this.pushBlock("KAZNA", this.addr, amt, "MINTING");
-            alert("Эмиссия проведена.");
+            this.pushBlock("KAZNA", this.addr, amt, "MINT");
+            alert("Эмиссия ок");
         },
 
         pushBlock(from, to, amt, type) {
