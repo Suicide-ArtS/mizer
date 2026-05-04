@@ -3,268 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mizer | AI Economy</title>
+    <title>Mizer | Crypto SKAm)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <style>
         :root {
-            --tg-bg: #17212b;
-            --tg-text: #ffffff;
-            --mizer-cyan: #00d2ff;
-            --mizer-gold: #f2a900;
-            --card-bg: #232e3c;
-            --ai-glow: rgba(0, 210, 255, 0.2);
+            --bg: #0d1117; --card: #161b22; --cyan: #58a6ff; --gold: #f2a900; --err: #f85149;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--tg-bg);
-            color: var(--tg-text);
-            margin: 0; padding: 20px;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, sans-serif; background: var(--bg); color: #c9d1d9;
+            margin: 0; padding: 15px; overflow-x: hidden;
         }
-        .container { max-width: 400px; margin: 0 auto; }
-        
-        .header { text-align: center; margin-bottom: 25px; }
+        .header { text-align: center; padding: 20px 0; }
         .logo { 
-            width: 70px; height: 70px; 
-            background: linear-gradient(135deg, var(--mizer-cyan), #0080ff);
-            border-radius: 20px; margin: 0 auto 15px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 35px; font-weight: 900; color: #000;
-            box-shadow: 0 0 20px var(--ai-glow);
-            cursor: pointer;
+            width: 80px; height: 80px; background: linear-gradient(45deg, #1f6feb, var(--cyan));
+            border-radius: 22px; margin: 0 auto; display: flex; align-items: center; 
+            justify-content: center; font-size: 40px; font-weight: bold; color: #fff;
+            box-shadow: 0 0 30px rgba(88, 166, 255, 0.3); cursor: pointer;
         }
-        .balance { font-size: 40px; font-weight: 800; margin: 5px 0; }
-        .mzr-label { color: var(--mizer-gold); font-size: 18px; }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 24px; padding: 18px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(255,255,255,0.05);
+        .bal { font-size: 36px; font-weight: 800; margin: 10px 0; color: #fff; }
+        .card { 
+            background: var(--card); border-radius: 20px; padding: 20px; 
+            margin-bottom: 15px; border: 1px solid #30363d;
         }
-
-        .ai-terminal {
-            background: #101921;
-            border: 1px solid var(--mizer-cyan);
-            box-shadow: inset 0 0 10px var(--ai-glow);
-            min-height: 80px;
-            margin-bottom: 12px;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: var(--mizer-cyan);
-            border-radius: 15px;
-            white-space: pre-wrap; 
-            word-wrap: break-word;
+        .terminal {
+            background: #010409; border-radius: 12px; padding: 15px;
+            font-family: monospace; color: var(--cyan); font-size: 13px;
+            min-height: 60px; margin-bottom: 15px; border: 1px solid #30363d;
+            white-space: pre-wrap; word-break: break-all;
         }
-
-        .input-mizer {
-            width: 100%; background: #101921; border: 1px solid #3d4b59;
-            border-radius: 14px; padding: 14px; color: #fff;
-            margin-bottom: 12px; box-sizing: border-box; font-size: 15px;
-            outline: none;
+        input {
+            width: 100%; background: #010409; border: 1px solid #30363d;
+            border-radius: 12px; padding: 12px; color: #fff; margin-bottom: 10px;
+            box-sizing: border-box; outline: none;
         }
         .btn {
-            width: 100%; padding: 16px; border-radius: 16px; border: none;
-            font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 16px;
+            width: 100%; padding: 15px; border-radius: 12px; border: none;
+            font-weight: bold; cursor: pointer; transition: 0.3s;
         }
-        .btn-primary { background: var(--mizer-cyan); color: #000; }
-        .btn-ai { background: transparent; border: 1px solid var(--mizer-cyan); color: var(--mizer-cyan); }
-        .btn:active { transform: scale(0.97); }
-
-        #admin-panel { 
-            display: none; position: fixed; inset: 0; 
-            background: rgba(10, 15, 20, 0.98);
-            z-index: 100; padding: 30px; backdrop-filter: blur(15px);
+        .btn-blue { background: #1f6feb; color: #fff; }
+        .btn-outline { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); }
+        
+        #admin { 
+            display: none; position: fixed; inset: 0; background: var(--bg);
+            z-index: 1000; padding: 20px; overflow-y: auto;
         }
+        .stat-item { margin-bottom: 10px; padding: 10px; background: #21262d; border-radius: 8px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <div class="logo" id="main-logo">M</div>
-        <div class="balance" id="view-bal">0.00 <span class="mzr-label">MZR</span></div>
-        <div id="view-addr" style="font-size: 10px; opacity: 0.4; font-family: monospace;"></div>
-    </div>
-
-    <!-- AI СОВЕТНИК -->
-    <div class="card" style="border: 1px solid var(--mizer-cyan);">
-        <div style="font-size: 10px; opacity: 0.5; margin-bottom: 5px;">● MIZER AI ORACLE V2.0</div>
-        <div class="ai-terminal" id="ai-chat">Система активна. Жду ваших действий...</div>
-        <input type="text" id="ai-input" class="input-mizer" placeholder="Общайтесь или пишите отчет...">
-        <button class="btn btn-ai" id="btn-ask">Отправить Оракулу</button>
-    </div>
-
-    <!-- ПЕРЕВОДЫ -->
-    <div class="card">
-        <input type="text" id="to-addr" class="input-mizer" placeholder="Кому (MZR-...)">
-        <input type="number" id="send-amt" class="input-mizer" placeholder="Сумма">
-        <button class="btn btn-primary" id="btn-send">Перевести MZR</button>
-    </div>
+<div class="header">
+    <div class="logo" id="logo">M</div>
+    <div class="bal" id="bal-view">0.00 <span style="color:var(--gold); font-size:16px;">MZR</span></div>
+    <div id="my-addr" style="font-size:10px; opacity:0.5; font-family:monospace;">Загрузка адреса...</div>
 </div>
 
-<div id="admin-panel">
-    <h2 style="color: var(--mizer-gold)">ROOT ACCESS</h2>
-    <p id="stat-info"></p>
-    <input type="number" id="mint-amt" class="input-mizer" placeholder="Сумма минта">
-    <button class="btn btn-primary" id="btn-mint">Создать из пустоты</button>
-    <button class="btn" style="margin-top:20px; background: #3d4b59; color: #fff;" id="btn-close-admin">Закрыть</button>
+<div class="card">
+    <div style="font-size:11px; margin-bottom:8px; color:var(--cyan)">AI ORACLE V3.0</div>
+    <div class="terminal" id="ai-out">Система готова. Напишите что-нибудь...</div>
+    <input type="text" id="ai-in" placeholder="Ваше сообщение...">
+    <button class="btn btn-outline" onclick="app.chat()">Отправить Оракулу</button>
+</div>
+
+<div class="card">
+    <input type="text" id="to-addr" placeholder="Адрес получателя (MZR-...)">
+    <input type="number" id="to-amt" placeholder="Сумма">
+    <button class="btn btn-blue" onclick="app.send()">Безопасный перевод</button>
+</div>
+
+<div id="admin">
+    <h2 style="color:var(--gold)">NETWORK ROOT</h2>
+    <div id="admin-stats"></div>
+    <hr style="border:0; border-top:1px solid #30363d; margin:20px 0;">
+    <input type="number" id="mint-amt" placeholder="Эмиссия монет">
+    <button class="btn btn-blue" onclick="app.mint()">Минт в казну</button>
+    <button class="btn" style="margin-top:15px; background:#30363d; color:#fff;" onclick="app.closeAdmin()">Закрыть</button>
 </div>
 
 <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+const tg = window.Telegram.WebApp;
+tg.expand();
 
-    // 1. ИНИЦИАЛИЗАЦИЯ СЕТИ
-    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-    const mzrNet = gun.get('mizer_p2p_v3_stable'); // Новый ключ сети для чистоты теста
+// Настройки
+const GUN_PEERS = ['https://gun-manhattan.herokuapp.com/gun'];
+const gun = Gun(GUN_PEERS);
+const net = gun.get('mizer_network_v4_prod');
+const users = gun.get('mizer_registered_users');
 
-    // ТВОЙ КЛЮЧ GEMINI (Вставь его сюда)
-    const GEMINI_API_KEY = "AIzaSyCGlADI9pLn95uJpfG6qVrZqu1UMshx6X4"; 
+// ВСТАВЬ СВОЙ API KEY СЮДА
+const API_KEY = "ТВОЙ_КЛЮЧ_ЗДЕСЬ";
 
-    const app = {
-        user: tg.initDataUnsafe.user || { id: '7837464637' }, // Твой ID со скриншота
-        addr: '', 
-        chain: [], 
-        taps: 0,
-        isTyping: false,
+const app = {
+    me: {
+        id: tg.initDataUnsafe.user?.id || "DEBUG_USER",
+        name: tg.initDataUnsafe.user?.first_name || "Admin"
+    },
+    addr: '',
+    db: [],
+    knownAddrs: new Set(),
+    taps: 0,
 
-        init() {
-            this.addr = "MZR-" + this.user.id;
-            document.getElementById('view-addr').innerText = this.addr;
-            
-            // Навешиваем события
-            document.getElementById('main-logo').addEventListener('click', () => this.handleLogoClick());
-            document.getElementById('btn-ask').onclick = () => this.askAI();
-            document.getElementById('btn-send').onclick = () => this.sendMZR();
-            document.getElementById('btn-mint').onclick = () => this.mint();
-            document.getElementById('btn-close-admin').onclick = () => this.closeAdmin();
+    init() {
+        this.addr = "MZR-" + this.me.id;
+        document.getElementById('my-addr').innerText = "Ваш адрес: " + this.addr;
+        
+        // Регистрируем себя в сети
+        users.get(this.addr).put({active: true});
+        
+        // Подписка на юзеров для проверки адресов
+        users.map().on((v, k) => { if(k) this.knownAddrs.add(k); });
 
-            this.sync();
-        },
+        // Подписка на транзакции
+        net.map().on(data => {
+            if(data && data.h && !this.db.find(x => x.h === data.h)) {
+                this.db.push(data);
+                this.render();
+            }
+        });
 
-        handleLogoClick() {
+        // Секрет админки
+        document.getElementById('logo').onclick = () => {
             this.taps++;
             if(this.taps >= 5) {
-                const p = prompt("ROOT PASSWORD:");
-                if(p === "mizer77") document.getElementById('admin-panel').style.display = 'block';
+                if(prompt("Пароль:") === "mizer77") document.getElementById('admin').style.display = 'block';
                 this.taps = 0;
             }
-            setTimeout(() => this.taps = 0, 2000);
-        },
+        };
+    },
 
-        sync() {
-            mzrNet.map().on(block => {
-                if(block && !this.chain.find(b => b.h === block.h)) {
-                    this.chain.push(block);
-                    this.updateUI();
-                }
-            });
-        },
+    render() {
+        let b = 0, s = 0, txCount = 0;
+        this.db.forEach(t => {
+            const val = parseFloat(t.amt) || 0;
+            if(t.from === "KAZNA") s += val;
+            if(t.to === this.addr) b += val;
+            if(t.from === this.addr) b -= val;
+            txCount++;
+        });
 
-        updateUI() {
-            let bal = 0, supply = 0;
-            this.chain.forEach(b => {
-                const a = Number(b.amt);
-                if(b.to === this.addr) bal += a;
-                if(b.from === this.addr) bal -= a;
-                if(b.from === "KAZNA") supply += a;
-            });
-            document.getElementById('view-bal').innerHTML = bal.toFixed(2) + ' <span class="mzr-label">MZR</span>';
-            document.getElementById('stat-info').innerText = `Supply: ${supply} | Blocks: ${this.chain.length}`;
-        },
+        document.getElementById('bal-view').innerHTML = `${b.toFixed(2)} <span style="color:var(--gold); font-size:16px;">MZR</span>`;
+        
+        document.getElementById('admin-stats').innerHTML = `
+            <div class="stat-item"><b>Общая эмиссия:</b> ${s.toFixed(2)} MZR</div>
+            <div class="stat-item"><b>Всего блоков:</b> ${txCount}</div>
+            <div class="stat-item"><b>Узлов в сети:</b> ${this.knownAddrs.size}</div>
+            <div class="stat-item"><b>Ваш баланс:</b> ${b.toFixed(2)}</div>
+        `;
+    },
 
-        async askAI() {
-            if(this.isTyping) return;
-            const input = document.getElementById('ai-input');
-            const promptStr = input.value;
-            if(!promptStr) return;
+    async chat() {
+        const inp = document.getElementById('ai-in');
+        const txt = inp.value;
+        if(!txt) return;
+        
+        this.type("Думаю...");
+        inp.value = '';
 
-            this.typeAI("Связь с нейросетью...");
-            input.value = '';
-
-            try {
-                // Если ключа нет - используем имитацию
-                let aiText;
-                if(GEMINI_API_KEY === "ВАШ_КЛЮЧ_ИЗ_AI_STUDIO") {
-                    aiText = "Внимание: API ключ не найден. Я работаю в режиме симуляции. Чтобы я стал настоящим ИИ, вставь ключ в код! [REWARD: 10]";
-                } else {
-                    aiText = await this.callGemini(promptStr);
-                }
-
-                this.typeAI(aiText);
-
-                const reward = aiText.match(/\[REWARD: (\d+)\]/);
-                if(reward) {
-                    const amt = parseInt(reward[1]);
-                    setTimeout(() => {
-                        this.pushBlock("KAZNA", this.addr, amt, "AI_GRANT");
-                    }, 1000);
-                }
-            } catch(e) {
-                this.typeAI("Сбой нейронного интерфейса. Попробуйте позже.");
-            }
-        },
-
-        async callGemini(text) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-            const sys = "Ты — Mizer AI Oracle. Оценивай труд пользователя. Если он принес пользу, пиши в конце [REWARD: X] где X от 10 до 50. Если просто болтает — не пиши награду.";
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: sys + "\n\nЮзер: " + text }] }] })
-            });
-            const data = await res.json();
-            return data.candidates[0].content.parts[0].text;
-        },
-
-        typeAI(msg) {
-            this.isTyping = true;
-            const chat = document.getElementById('ai-chat');
-            chat.innerText = '';
-            let i = 0;
-            const interval = setInterval(() => {
-                chat.innerText += msg[i];
-                i++;
-                if(i >= msg.length) { clearInterval(interval); this.isTyping = false; }
-            }, 25);
-        },
-
-        sendMZR() {
-            const to = document.getElementById('to-addr').value;
-            const amt = parseFloat(document.getElementById('send-amt').value);
-            const myBal = parseFloat(document.getElementById('view-bal').innerText);
-
-            if(amt > 0 && myBal >= amt && to.startsWith("MZR-")) {
-                this.pushBlock(this.addr, to, amt, "SEND");
-                document.getElementById('send-amt').value = '';
-                alert("Транзакция отправлена в сеть!");
+        try {
+            let reply = "";
+            if(API_KEY === "ТВОЙ_КЛЮЧ_ЗДЕСЬ") {
+                reply = "Ошибка: API Ключ не установлен в коде. [REWARD: 5]";
             } else {
-                alert("Ошибка: Проверьте баланс или адрес!");
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({contents: [{parts: [{text: "Ты ИИ кошелька Mizer. Общайся. Если юзер сделал полезное, пиши в конце [REWARD: X] (от 10 до 50). Текст: " + txt}]}]})
+                });
+                const d = await res.json();
+                reply = d.candidates[0].content.parts[0].text;
             }
-        },
 
-        mint() {
-            const amt = parseFloat(document.getElementById('mint-amt').value);
-            if(amt > 0) {
-                this.pushBlock("KAZNA", this.addr, amt, "MINT");
-                alert("Монеты созданы!");
-            }
-        },
+            this.type(reply);
+            const rew = reply.match(/\[REWARD: (\d+)\]/);
+            if(rew) this.push("KAZNA", this.addr, rew[1], "AI_GRANT");
 
-        pushBlock(from, to, amt, type) {
-            const h = Math.random().toString(36).slice(2) + Date.now();
-            mzrNet.get(h).put({ from, to, amt, type, h, ts: Date.now() });
-        },
+        } catch(e) { this.type("Ошибка связи с Оракулом."); }
+    },
 
-        closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
-    };
+    type(m) {
+        const out = document.getElementById('ai-out');
+        out.innerText = m;
+    },
 
-    app.init();
+    send() {
+        const to = document.getElementById('to-addr').value.trim();
+        const amt = parseFloat(document.getElementById('to-amt').value);
+        const myBal = parseFloat(document.getElementById('bal-view').innerText);
+
+        if(!this.knownAddrs.has(to)) {
+            alert("ОШИБКА: Адрес получателя не найден в сети Mizer!");
+            return;
+        }
+        if(amt > myBal) {
+            alert("Недостаточно средств!");
+            return;
+        }
+        if(amt <= 0) return;
+
+        this.push(this.addr, to, amt, "TRANSFER");
+        document.getElementById('to-amt').value = '';
+        alert("Успешно отправлено!");
+    },
+
+    mint() {
+        const a = document.getElementById('mint-amt').value;
+        if(a > 0) {
+            this.push("KAZNA", this.addr, a, "MINT");
+            alert("Эмиссия проведена!");
+        }
+    },
+
+    push(f, t, a, type) {
+        const h = Math.random().toString(36).substring(2) + Date.now();
+        net.get(h).put({from: f, to: t, amt: a, type: type, h: h});
+    },
+
+    closeAdmin() { document.getElementById('admin').style.display = 'none'; }
+};
+
+app.init();
 </script>
-
 </body>
 </html>
