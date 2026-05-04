@@ -6,158 +6,256 @@
     <title>Mizer | Crypto SKAm)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-    <!-- Подключаем модуль памяти для Gun, чтобы данные не исчезали -->
-    <script src="https://cdn.jsdelivr.net/npm/gun/lib/radix.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/lib/radisk.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/lib/store.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/lib/rstorage.js"></script>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --cyan: #58a6ff; --gold: #f2a900; }
-        body { font-family: sans-serif; background: var(--bg); color: #c9d1d9; margin: 0; padding: 15px; }
-        .logo { width: 70px; height: 70px; background: #1f6feb; border-radius: 18px; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: bold; cursor: pointer; }
-        .bal { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 20px; }
-        .card { background: var(--card); border-radius: 16px; padding: 15px; margin-bottom: 10px; border: 1px solid #30363d; }
-        input { width: 100%; background: #010409; border: 1px solid #30363d; border-radius: 8px; padding: 12px; color: #fff; margin-bottom: 10px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-blue { background: #1f6feb; color: #fff; }
-        #admin { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 100; padding: 20px; }
-        .stat-line { padding: 8px 0; border-bottom: 1px solid #30363d; font-family: monospace; }
+        :root {
+            --bg: #0a0a0c;
+            --card: #141417;
+            --cyan: #00d2ff;
+            --gold: #f2a900;
+            --text: #e0e0e0;
+            --accent: #1f6feb;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+        /* Дизайн заголовка */
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { 
+            width: 80px; height: 80px; 
+            background: linear-gradient(135deg, var(--accent), var(--cyan));
+            border-radius: 24px; margin: 0 auto 15px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 38px; font-weight: 900; color: #fff;
+            box-shadow: 0 10px 20px rgba(0, 210, 255, 0.2);
+            cursor: pointer; transition: 0.3s;
+        }
+        .logo:active { transform: scale(0.9); }
+        .bal-val { font-size: 42px; font-weight: 800; letter-spacing: -1px; }
+        
+        /* Карточки */
+        .card {
+            background: var(--card);
+            border-radius: 24px; padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        /* ИИ Терминал */
+        .terminal {
+            background: #000; border-radius: 16px; padding: 15px;
+            font-family: 'Consolas', monospace; color: var(--cyan);
+            font-size: 14px; min-height: 60px; margin-bottom: 15px;
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            white-space: pre-wrap; overflow-y: auto; max-height: 150px;
+        }
+
+        input {
+            width: 100%; background: #1c1c21; border: 1px solid #2d2d35;
+            border-radius: 14px; padding: 14px; color: #fff;
+            margin-bottom: 12px; box-sizing: border-box; font-size: 15px;
+            transition: 0.2s;
+        }
+        input:focus { border-color: var(--cyan); outline: none; }
+
+        .btn {
+            width: 100%; padding: 16px; border-radius: 16px; border: none;
+            font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 15px;
+        }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-ai { background: rgba(0, 210, 255, 0.1); color: var(--cyan); border: 1px solid var(--cyan); }
+        .btn:active { transform: scale(0.98); opacity: 0.8; }
+
+        /* Админка */
+        #admin-screen {
+            display: none; position: fixed; inset: 0; 
+            background: var(--bg); z-index: 1000; padding: 25px;
+            overflow-y: auto;
+        }
+        .vip-badge {
+            background: var(--gold); color: #000; padding: 4px 10px;
+            border-radius: 8px; font-size: 10px; font-weight: 900; vertical-align: middle;
+        }
     </style>
 </head>
 <body>
 
-<div class="logo" id="logo">M</div>
-<div class="bal" id="bal-view">0.00 MZR</div>
-<div id="addr-view" style="text-align:center; font-size:10px; opacity:0.5; margin-bottom:20px;">Загрузка...</div>
+<div id="main-ui">
+    <div class="header">
+        <div class="logo" id="main-logo">M</div>
+        <div class="bal-val" id="bal-display">0.00</div>
+        <div style="color: var(--gold); font-weight: bold; font-size: 14px; margin-top: -5px;">MIZER COINS</div>
+        <div id="my-addr" style="font-size: 10px; opacity: 0.4; margin-top: 10px; font-family: monospace;"></div>
+    </div>
 
-<div class="card">
-    <input type="text" id="to-addr" placeholder="MZR-адрес получателя">
-    <input type="number" id="to-amt" placeholder="Сумма">
-    <button class="btn btn-blue" onclick="app.send()">Отправить монеты</button>
+    <!-- Гражданский ИИ -->
+    <div class="card">
+        <div style="font-size: 11px; margin-bottom: 10px; opacity: 0.6;">MIZER ASSISTANT</div>
+        <div class="terminal" id="ai-chat">Привет! Я помогу тебе с переводами или выдам награду за работу.</div>
+        <input type="text" id="ai-input" placeholder="Напиши что-нибудь...">
+        <button class="btn btn-ai" onclick="app.askAI(false)">Отправить</button>
+    </div>
+
+    <!-- Переводы -->
+    <div class="card">
+        <input type="text" id="send-to" placeholder="MZR-адрес получателя">
+        <input type="number" id="send-amount" placeholder="Сумма">
+        <button class="btn btn-primary" onclick="app.transfer()">Подтвердить перевод</button>
+    </div>
 </div>
 
-<div id="admin">
-    <h2>NETWORK MONITOR</h2>
-    <div id="stats-box"></div>
-    <button class="btn btn-blue" style="margin-top:20px" onclick="app.mint()">Создать 1000 MZR</button>
-    <button class="btn" style="margin-top:10px" onclick="app.closeAdmin()">Назад</button>
+<!-- АДМИНКА -->
+<div id="admin-screen">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>ROOT CONSOLE <span class="vip-badge">VIP</span></h2>
+        <button onclick="app.closeAdmin()" style="background:none; border:none; color:#ff4444; font-weight:bold;">ЗАКРЫТЬ</button>
+    </div>
+    
+    <div class="card" style="background: #1a1a1f; border: 1px solid var(--gold);">
+        <div style="font-size: 11px; margin-bottom: 10px; color: var(--gold);">VIP ORACLE (ADMIN ONLY)</div>
+        <div class="terminal" id="vip-chat" style="color: var(--gold); border-color: var(--gold);">Слушаю вас, Создатель. Я могу печатать и удалять монеты по вашему приказу.</div>
+        <input type="text" id="vip-input" placeholder="Приказ для Оракула...">
+        <button class="btn" style="background: var(--gold); color: #000;" onclick="app.askAI(true)">Выполнить</button>
+    </div>
+
+    <div class="card" id="stats-panel">
+        <!-- Статистика вставится сюда -->
+    </div>
 </div>
 
 <script>
 const tg = window.Telegram.WebApp;
-tg.expand();
+const API_KEY = "AIzaSyCGlADI9pLn95uJpfG6qVrZqu1UMshx6X4"; // Вставь свой ключ Gemini сюда
 
-// Используем несколько пиров для надежности
-const gun = Gun({
-    peers: [
-        'https://gun-manhattan.herokuapp.com/gun',
-        'https://gun-us.herokuapp.com/gun'
-    ],
-    localStorage: true // ВКЛЮЧАЕМ локальное хранение
-});
-
-const net = gun.get('mizer_global_v5'); // Новая версия сети
-const registry = gun.get('mizer_nodes_registry');
+const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+const net = gun.get('mizer_v6_final');
+const reg = gun.get('mizer_nodes_v6');
 
 const app = {
     addr: "MZR-" + (tg.initDataUnsafe.user?.id || "DEBUG"),
-    db: {}, // Используем объект вместо массива для предотвращения дублей
+    db: {},
     nodes: {},
     taps: 0,
 
     init() {
-        document.getElementById('addr-view').innerText = this.addr;
-        
-        // 1. Регистрируем наш узел в глобальном списке
-        registry.get(this.addr).put({ lastSeen: Date.now() });
+        document.getElementById('my-addr').innerText = this.addr;
+        reg.get(this.addr).put({ lastSeen: Date.now() });
 
-        // 2. Слушаем список всех узлов
-        registry.map().on((data, id) => {
-            if(data) this.nodes[id] = data;
-            this.updateStats();
-        });
+        // Синхронизация
+        reg.map().on((d, id) => { if(d) this.nodes[id] = d; this.renderStats(); });
+        net.map().on((d, id) => { if(d && d.h) { this.db[d.h] = d; this.calculate(); }});
 
-        // 3. Слушаем все транзакции
-        net.map().on((data, id) => {
-            if(data && data.h) {
-                this.db[data.h] = data;
-                this.calculate();
-            }
-        });
-
-        // Админка
-        document.getElementById('logo').onclick = () => {
+        // Секрет админки
+        document.getElementById('main-logo').onclick = () => {
             this.taps++;
             if(this.taps >= 5) {
-                document.getElementById('admin').style.display = 'block';
+                if(prompt("Код доступа:") === "mizer77") document.getElementById('admin-screen').style.display = 'block';
                 this.taps = 0;
             }
+            setTimeout(() => this.taps = 0, 2000);
         };
     },
 
     calculate() {
-        let balance = 0;
-        let supply = 0;
-        
+        let b = 0, s = 0;
         Object.values(this.db).forEach(tx => {
-            const amt = parseFloat(tx.amt) || 0;
-            if(tx.from === "KAZNA") supply += amt;
-            if(tx.to === this.addr) balance += amt;
-            if(tx.from === this.addr) balance -= amt;
+            const a = parseFloat(tx.amt) || 0;
+            if(tx.from === "KAZNA") s += a;
+            if(tx.from === "VOID") s -= a; // Удаление из сети
+            if(tx.to === this.addr) b += a;
+            if(tx.from === this.addr) b -= a;
         });
-
-        document.getElementById('bal-view').innerText = balance.toFixed(2) + " MZR";
-        this.updateStats(supply);
+        document.getElementById('bal-display').innerText = b.toFixed(2);
+        this.renderStats(s);
     },
 
-    updateStats(supply = 0) {
-        const statsBox = document.getElementById('stats-box');
-        const nodesCount = Object.keys(this.nodes).length;
-        const txCount = Object.keys(this.db).length;
-
-        statsBox.innerHTML = `
-            <div class="stat-line">ID: ${this.addr}</div>
-            <div class="stat-line">Ваш баланс: ${document.getElementById('bal-view').innerText}</div>
-            <div class="stat-line">Узлов в сети: ${nodesCount}</div>
-            <div class="stat-line">Всего транзакций: ${txCount}</div>
-            <div class="stat-line">Эмиссия: ${supply.toFixed(2)} MZR</div>
+    renderStats(s = 0) {
+        const panel = document.getElementById('stats-panel');
+        if(!panel) return;
+        panel.innerHTML = `
+            <div style="font-family:monospace; font-size:12px;">
+                <p>ЭМИССИЯ: ${s.toFixed(2)} MZR</p>
+                <p>АКТИВНЫХ УЗЛОВ: ${Object.keys(this.nodes).length}</p>
+                <p>ТРАНЗАКЦИЙ: ${Object.keys(this.db).length}</p>
+            </div>
         `;
     },
 
-    send() {
-        const to = document.getElementById('to-addr').value.trim();
-        const amt = parseFloat(document.getElementById('to-amt').value);
-        
-        if(!this.nodes[to]) {
-            alert("Этот адрес еще не заходил в сеть Mizer!");
-            return;
-        }
+    async askAI(isVip) {
+        const inputId = isVip ? 'vip-input' : 'ai-input';
+        const chatId = isVip ? 'vip-chat' : 'ai-chat';
+        const prompt = document.getElementById(inputId).value;
+        if(!prompt) return;
 
-        const h = Math.random().toString(36).substring(7) + Date.now();
-        net.get(h).put({
-            from: this.addr,
-            to: to,
-            amt: amt,
-            h: h,
-            ts: Date.now()
-        });
-        
-        alert("Транзакция отправлена!");
-        document.getElementById('to-amt').value = '';
+        this.type(chatId, "Думаю...");
+        document.getElementById(inputId).value = '';
+
+        try {
+            let response = "";
+            if(API_KEY === "API_KEY_HERE") {
+                // Заглушка
+                response = isVip 
+                    ? `Приветствую, VIP гость. Я вижу ваш запрос: "${prompt}". В режиме заглушки я просто имитирую власть. [MINT: 100]`
+                    : `Я получил твой отчет. Неплохо для обычного пользователя. [REWARD: 10]`;
+            } else {
+                response = await this.callGemini(prompt, isVip);
+            }
+
+            this.type(chatId, response);
+
+            // Обработка команд ИИ
+            if(isVip) {
+                const mint = response.match(/\[MINT: (\d+)\]/);
+                const del = response.match(/\[DELETE: (\d+)\]/);
+                if(mint) this.push("KAZNA", this.addr, mint[1], "VIP_MINT");
+                if(del) this.push(this.addr, "VOID", del[1], "VIP_BURN");
+            } else {
+                const rew = response.match(/\[REWARD: (\d+)\]/);
+                if(rew) this.push("KAZNA", this.addr, rew[1], "REWARD");
+            }
+
+        } catch(e) { this.type(chatId, "Сбой нейромодуля."); }
     },
 
-    mint() {
-        const h = "MINT" + Date.now();
-        net.get(h).put({
-            from: "KAZNA",
-            to: this.addr,
-            amt: 1000,
-            h: h,
-            ts: Date.now()
+    async callGemini(text, isVip) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        const role = isVip 
+            ? "Ты - VIP Оракул системы Mizer. Ты общаешься с создателем. Ты можешь печатать монеты командой [MINT: кол-во] или удалять их [DELETE: кол-во]. Будь властным."
+            : "Ты - ассистент кошелька Mizer. Помогай юзерам. Можешь давать награду [REWARD: кол-во] до 50 за пользу.";
+        
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({contents: [{parts: [{text: role + "\n\nЗапрос: " + text}]}]})
         });
+        const d = await res.json();
+        return d.candidates[0].content.parts[0].text;
     },
 
-    closeAdmin() { document.getElementById('admin').style.display = 'none'; }
+    type(id, msg) { document.getElementById(id).innerText = msg; },
+
+    transfer() {
+        const to = document.getElementById('send-to').value.trim();
+        const amt = parseFloat(document.getElementById('send-amount').value);
+        const myBal = parseFloat(document.getElementById('bal-display').innerText);
+
+        if(!this.nodes[to]) return alert("Адрес не найден!");
+        if(amt > myBal || amt <= 0) return alert("Ошибка суммы!");
+
+        this.push(this.addr, to, amt, "SEND");
+        alert("Отправлено!");
+    },
+
+    push(f, t, a, type) {
+        const h = Math.random().toString(36).substring(2) + Date.now();
+        net.get(h).put({from: f, to: t, amt: a, type: type, h: h});
+    },
+
+    closeAdmin() { document.getElementById('admin-screen').style.display = 'none'; }
 };
 
 app.init();
