@@ -166,33 +166,52 @@
         },
 
         // ЛОГИКА ИИ
-        askAI() {
+        const GEMINI_API_KEY = "AIzaSyCGlADI9pLn95uJpfG6qVrZqu1UMshx6X4"; 
+        
+        async function askGemini(prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            
+            // Контекст для ИИ: кто он и какая у него задача
+            const systemInstruction = "Ты — Mizer AI Oracle, душа крипто-кошелька Mizer. Твоя задача: общаться с пользователем и оценивать его вклад. Если пользователь прислал отчет о работе (код, дизайн, помощь), напиши в конце ответа строго формат: [REWARD: X], где X - сумма от 10 до 50. Если это просто общение — не пиши награду. Будь лаконичен, ироничен и профессионален.";
+        
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: systemInstruction + "\n\nПользователь пишет: " + prompt }] }]
+                })
+            });
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+        
+        // Обновляем метод в объекте app
+        app.askAI = async function() {
             if(this.isTyping) return;
-            const text = document.getElementById('ai-input').value.toLowerCase();
-            const chat = document.getElementById('ai-chat');
-            
-            if(text.length < 10) {
-                this.typeAI("Слишком короткий отчет. ИИ требует подробностей.");
-                return;
-            }
-
-            this.typeAI("Анализирую вклад в экосистему...");
-            
-            setTimeout(() => {
-                // Простая проверка "на вшивость"
-                const keywords = ['сделал', 'работа', 'код', 'дизайн', 'помог', 'отчет', 'mizer'];
-                const found = keywords.some(word => text.includes(word));
-
-                if(found) {
-                    const reward = Math.floor(Math.random() * 40) + 10; // От 10 до 50
-                    this.typeAI(`Анализ завершен. Ценность подтверждена. Начислено: ${reward} MZR.`);
-                    this.pushBlock("KAZNA", this.addr, reward, "AI_GRANT");
-                } else {
-                    this.typeAI("Ошибка: Сообщение не содержит данных о полезной деятельности. Грант отклонен.");
+            const inputField = document.getElementById('ai-input');
+            const userText = inputField.value;
+            if(!userText) return;
+        
+            this.typeAI("Устанавливаю связь с нейросетью...");
+            inputField.value = '';
+        
+            try {
+                const aiResponse = await askGemini(userText);
+                this.typeAI(aiResponse);
+        
+                // Ищем, назначил ли ИИ награду
+                const rewardMatch = aiResponse.match(/\[REWARD: (\d+)\]/);
+                if(rewardMatch) {
+                    const amount = parseInt(rewardMatch[1]);
+                    setTimeout(() => {
+                        this.pushBlock("KAZNA", this.addr, amount, "AI_REWARD");
+                        alert(`ИИ начислил вам ${amount} MZR!`);
+                    }, 1000);
                 }
-                document.getElementById('ai-input').value = '';
-            }, 2000);
-        },
+            } catch (e) {
+                this.typeAI("Ошибка связи. Проверь API Key в коде.");
+            }
+        };
 
         typeAI(msg) {
             this.isTyping = true;
