@@ -72,6 +72,16 @@
 <body>
 
 <div class="container">
+
+    <div class="card" style="border: 1px solid var(--mizer-cyan);">
+        <h3 style="color: var(--mizer-cyan);">AI Регулятор v1.0</h3>
+        <div id="ai-chat-box" style="height: 100px; overflow-y: auto; font-size: 13px; background: #101921; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px inset #2b3948;">
+            <div style="color: #00d2ff;">[SYSTEM]: Жду отчет о выполненной работе...</div>
+        </div>
+        <input type="text" id="ai-report" class="input-mizer" placeholder="Что ты сделал полезного?">
+        <button class="btn btn-primary" onclick="app.askAI()">Отправить на анализ</button>
+    </div>
+    
     <div class="header">
         <!-- Кликнуть 5 раз для входа в админку -->
         <div class="logo" id="main-logo">M</div>
