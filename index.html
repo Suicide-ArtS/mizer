@@ -2,232 +2,213 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberBank Ultimate | P2P Ecosystem</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mizer | AI Economy</title>
+    <!-- SDK Telegram, чтобы приложение понимало, что оно внутри мессенджера -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <style>
         :root {
-            --bg: #09090b; --card: #17171a; --accent: #00f2ff;
-            --gold: #f2a900; --text: #fafafa; --secondary: #a1a1aa;
-            --danger: #f43f5e; --success: #10b981;
+            --tg-bg: #17212b;
+            --tg-text: #ffffff;
+            --mizer-cyan: #00d2ff;
+            --mizer-gold: #f2a900;
+            --card-bg: #232e3c;
         }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--tg-bg);
+            color: var(--tg-text);
+            margin: 0; padding: 20px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .container { max-width: 400px; margin: 0 auto; }
+        
+        /* Шапка с балансом */
+        .header { text-align: center; margin-bottom: 25px; padding-top: 10px; }
+        .logo { 
+            width: 70px; height: 70px; 
+            background: linear-gradient(135deg, var(--mizer-cyan), #0080ff);
+            border-radius: 20px; margin: 0 auto 15px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 35px; font-weight: 900; color: #000;
+            box-shadow: 0 8px 25px rgba(0,210,255,0.3);
+            cursor: pointer;
+        }
+        .balance { font-size: 40px; font-weight: 800; margin: 5px 0; letter-spacing: -1px; }
+        .mzr-label { color: var(--mizer-gold); font-size: 18px; margin-left: 5px; }
 
-        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; }
-        .app-container { width: 100%; max-width: 400px; background: var(--card); border-radius: 38px; padding: 24px; box-shadow: 0 0 80px rgba(0,0,0,0.8); border: 1px solid #27272a; position: relative; }
+        /* Карточки действий */
+        .card {
+            background: var(--card-bg);
+            border-radius: 24px; padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        h3 { margin: 0 0 15px 0; font-size: 16px; opacity: 0.8; }
+        
+        .input-mizer {
+            width: 100%; background: #101921; border: 1px solid #3d4b59;
+            border-radius: 14px; padding: 14px; color: #fff;
+            margin-bottom: 12px; box-sizing: border-box; font-size: 15px;
+        }
+        .btn {
+            width: 100%; padding: 16px; border-radius: 16px; border: none;
+            font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 16px;
+        }
+        .btn-primary { background: var(--mizer-cyan); color: #000; }
+        .btn-primary:active { transform: scale(0.97); }
 
-        /* Верхняя панель */
-        .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .logo-btn { width: 42px; height: 42px; background: var(--accent); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 900; cursor: pointer; user-select: none; transition: 0.2s; }
-        .logo-btn:active { transform: scale(0.9); }
-
-        /* Карта баланса */
-        .balance-card { background: linear-gradient(145deg, #1e293b, #020617); padding: 24px; border-radius: 28px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: inset 0 0 20px rgba(0,242,255,0.05); }
-        .bal-val { font-size: 36px; font-weight: 800; letter-spacing: -1px; }
-
-        /* Поля и кнопки */
-        .field { background: #0f0f12; border: 1px solid #27272a; border-radius: 16px; padding: 14px; color: #fff; width: 100%; box-sizing: border-box; margin-bottom: 12px; outline: none; transition: 0.3s; }
-        .field:focus { border-color: var(--accent); }
-        .btn { width: 100%; padding: 16px; border-radius: 18px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
-        .btn-main { background: var(--accent); color: #000; }
-        .btn-mine { background: #27272a; color: var(--gold); border: 1px solid #3f3f46; }
-
-        /* Майнинг-виджет */
-        .mining-box { background: #0f0f12; border-radius: 20px; padding: 15px; margin-top: 10px; display: none; border: 1px solid #27272a; }
-        .hash-str { font-family: 'monospace'; font-size: 10px; color: var(--success); opacity: 0.7; word-break: break-all; height: 24px; }
-
-        /* Скрытая Админка */
-        #admin-modal { display: none; background: rgba(0,0,0,0.9); position: absolute; inset: 0; z-index: 100; border-radius: 38px; padding: 30px; backdrop-filter: blur(10px); flex-direction: column; justify-content: center; }
-        .admin-stat { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px; color: var(--secondary); border-bottom: 1px solid #333; padding-bottom: 5px; }
-
-        .history { max-height: 140px; overflow-y: auto; margin-top: 15px; }
-        .tx { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #27272a; font-size: 13px; }
+        /* Админка (скрытая) */
+        #admin-panel { 
+            display: none; position: fixed; inset: 0; 
+            background: rgba(10, 15, 20, 0.98);
+            z-index: 100; padding: 30px; backdrop-filter: blur(15px);
+        }
+        .stat-line { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <!-- AUTH -->
-    <div id="auth-ui">
-        <div class="logo-btn" style="margin: 0 auto 20px; width: 60px; height: 60px;">C</div>
-        <h2 style="text-align: center;">CyberBank</h2>
-        <input type="text" id="sk-input" class="field" placeholder="Secret Key" style="text-align: center;">
-        <button class="btn btn-main" onclick="core.login()">Войти</button>
-        <button class="btn" style="background:transparent; color:#fff" onclick="core.create()">Создать аккаунт</button>
+<div class="container">
+    <div class="header">
+        <!-- Кликнуть 5 раз для входа в админку -->
+        <div class="logo" id="main-logo">M</div>
+        <div class="balance" id="view-bal">0.00 <span class="mzr-label">MZR</span></div>
+        <div id="view-addr" style="font-size: 10px; opacity: 0.4; font-family: monospace;"></div>
     </div>
 
-    <!-- MAIN APP -->
-    <div id="app-ui" style="display: none;">
-        <div class="nav">
-            <div class="logo-btn" id="admin-trigger" onclick="core.adminClick()">C</div>
-            <div id="net-status" style="font-size: 10px; color: var(--success);">● P2P ACTIVE</div>
-        </div>
-
-        <div class="balance-card">
-            <div style="font-size: 12px; color: var(--secondary); margin-bottom: 5px;">Ваш кошелек</div>
-            <div class="bal-val" id="bal-view">0.00 <span style="font-size: 16px; color: var(--gold);">CYB</span></div>
-            <div id="addr-view" style="font-size: 9px; opacity: 0.5; margin-top: 12px; font-family: monospace;"></div>
-        </div>
-
-        <input type="text" id="target-addr" class="field" placeholder="Адрес получателя">
-        <input type="number" id="send-amt" class="field" placeholder="Сумма">
-        <button class="btn btn-main" onclick="core.send()">Перевести</button>
-        <button class="btn btn-mine" id="mine-btn" onclick="core.toggleMining()">Майнинг: OFF</button>
-
-        <div class="mining-box" id="mine-ui">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px;">
-                <span>STATUS: MINING...</span>
-                <span id="nonce-count" color="var(--gold)">0</span>
-            </div>
-            <div class="hash-str" id="hash-view">hashбудет тут...</div>
-        </div>
-
-        <div class="history" id="history"></div>
+    <!-- Переводы -->
+    <div class="card">
+        <h3>Отправить перевод</h3>
+        <input type="text" id="to-addr" class="input-mizer" placeholder="Адрес (MZR-...)">
+        <input type="number" id="send-amt" class="input-mizer" placeholder="Сумма">
+        <button class="btn btn-primary" onclick="app.send()">Отправить MZR</button>
     </div>
 
-    <!-- HIDDEN ADMIN MODAL -->
-    <div id="admin-modal">
-        <h3 style="color: var(--gold); margin-top: 0;">ROOT ACCESS</h3>
-        <div class="admin-stat">Эмиссия: <span id="stat-supply" style="color:#fff">0</span></div>
-        <div class="admin-stat">Блоки: <span id="stat-blocks" style="color:#fff">0</span></div>
-        
-        <label style="font-size: 10px; color: var(--secondary);">Сумма выпуска:</label>
-        <input type="number" id="adm-give-amt" class="field" value="5000">
-        <button class="btn btn-main" style="background: var(--gold);" onclick="core.adminGive()">Выпустить монеты (Mint)</button>
-        <button class="btn" style="background: var(--danger); color: #fff;" onclick="core.closeAdmin()">Закрыть</button>
+    <!-- AI Система -->
+    <div class="card">
+        <h3>AI Награда</h3>
+        <p style="font-size: 12px; color: #8a99a8; margin-bottom: 12px;">Введи секретный код от ИИ для начисления:</p>
+        <input type="text" id="ai-code" class="input-mizer" placeholder="Код из бота">
+        <button class="btn" style="background: #2b3948; color: #fff;" onclick="app.claim()">Активировать</button>
     </div>
 </div>
 
+<!-- Скрытая Админка -->
+<div id="admin-panel">
+    <h2 style="color: var(--mizer-gold); margin-bottom: 20px;">УПРАВЛЕНИЕ КАЗНОЙ</h2>
+    <div class="card" style="background: rgba(255,255,255,0.05)">
+        <div class="stat-line">В обороте: <b id="stat-supply">0</b></div>
+        <div class="stat-line">Транзакций: <b id="stat-blocks">0</b></div>
+    </div>
+    
+    <h3>Эмиссия (Печать MZR)</h3>
+    <input type="number" id="mint-amt" class="input-mizer" placeholder="Сумма выпуска">
+    <button class="btn btn-primary" onclick="app.mint()">Минт в казну</button>
+    
+    <button class="btn" style="margin-top:20px; background: #ef4444; color: #fff;" onclick="app.closeAdmin()">Закрыть</button>
+</div>
+
 <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.headerColor = '#17212b';
+
+    // Подключаемся к P2P-сети Mizer
     const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-    const db = gun.get('cyber-p2p-final-v1');
+    const mzrNet = gun.get('mizer_p2p_network_final_v1');
 
-    const core = {
-        key: '', addr: '', chain: [], clickCount: 0, isMining: false,
-        
-        create() {
-            const k = 'CYBER-' + Math.random().toString(36).substring(2, 12).toUpperCase();
-            document.getElementById('sk-input').value = k;
-            alert("СОХРАНИ КЛЮЧ: " + k);
-        },
+    const app = {
+        // Если открыто в телеге — берем ID юзера, если нет — гость
+        user: tg.initDataUnsafe.user || { id: 'GUEST_' + Math.floor(Math.random()*1000) },
+        addr: '', 
+        chain: [], 
+        taps: 0,
 
-        login() {
-            this.key = document.getElementById('sk-input').value;
-            if(!this.key) return alert("Введите ключ!");
-            this.addr = "CB-" + btoa(this.key).slice(0, 8).toUpperCase();
-            document.getElementById('auth-ui').style.display = 'none';
-            document.getElementById('app-ui').style.display = 'block';
-            document.getElementById('addr-view').innerText = this.addr;
+        init() {
+            this.addr = "MZR-" + this.user.id;
+            document.getElementById('view-addr').innerText = "ADDRESS: " + this.addr;
+            
+            // Скрытый вход в админку
+            document.getElementById('main-logo').onclick = () => {
+                this.taps++;
+                if(this.taps >= 5) {
+                    const pass = prompt("Введите ROOT-пароль:");
+                    if(pass === "mizer77") document.getElementById('admin-panel').style.display = 'block';
+                    this.taps = 0;
+                }
+                setTimeout(() => this.taps = 0, 3000); // Сброс тапов через 3 сек
+            };
+
             this.sync();
         },
 
         sync() {
-            db.map().on(block => {
-                if(block && !this.chain.find(b => b.hash === block.hash)) {
+            mzrNet.map().on(block => {
+                if(block && !this.chain.find(b => b.h === block.h)) {
                     this.chain.push(block);
-                    this.chain.sort((a,b) => a.idx - b.idx);
                     this.updateUI();
                 }
             });
         },
 
         updateUI() {
-            let b = 0, supply = 0;
-            const hist = document.getElementById('history');
-            hist.innerHTML = '';
-
-            this.chain.forEach(blk => {
-                const amt = Number(blk.amt);
-                if(blk.to === this.addr) b += amt;
-                if(blk.from === this.addr) b -= amt;
-                if(blk.from === "SYSTEM" || blk.from === "ROOT") supply += amt;
-
-                if(blk.from === this.addr || blk.to === this.addr) {
-                    const isIn = blk.to === this.addr;
-                    hist.innerHTML = `<div class="tx">
-                        <span>${isIn ? '⬅ RECEIVED' : '➡ SENT'}</span>
-                        <b style="color:${isIn ? 'var(--success)' : 'var(--danger)'}">${isIn?'+':'-'}${amt}</b>
-                    </div>` + hist.innerHTML;
-                }
+            let bal = 0, supply = 0;
+            this.chain.forEach(b => {
+                const a = Number(b.amt);
+                if(b.to === this.addr) bal += a;
+                if(b.from === this.addr) bal -= a;
+                if(b.from === "KAZNA") supply += a;
             });
-
-            document.getElementById('bal-view').innerHTML = b.toFixed(2) + ' <span style="font-size:16px;color:var(--gold)">CYB</span>';
-            document.getElementById('stat-supply').innerText = supply.toFixed(0) + " CYB";
+            document.getElementById('view-bal').innerHTML = bal.toFixed(2) + ' <span class="mzr-label">MZR</span>';
+            document.getElementById('stat-supply').innerText = supply.toFixed(0) + " MZR";
             document.getElementById('stat-blocks').innerText = this.chain.length;
         },
 
         send() {
-            const to = document.getElementById('target-addr').value;
+            const to = document.getElementById('to-addr').value;
             const amt = parseFloat(document.getElementById('send-amt').value);
-            const myBal = parseFloat(document.getElementById('bal-view').innerText);
+            const currentBal = parseFloat(document.getElementById('view-bal').innerText);
 
-            if(!to || isNaN(amt) || amt > myBal) return alert("Ошибка транзакции");
-            this.pushBlock(this.addr, to, amt, "TX");
+            if(!to || isNaN(amt) || amt <= 0) return alert("Некорректные данные");
+            if(amt > currentBal) return alert("Недостаточно MZR!");
+            
+            this.pushBlock(this.addr, to, amt, "TRANSFER");
             document.getElementById('send-amt').value = '';
+            alert("Успешно отправлено!");
+        },
+
+        claim() {
+            const code = document.getElementById('ai-code').value;
+            // Простейшая проверка кода. В будущем тут будет сверка с ИИ-базой
+            if(code.startsWith("MZR_AI_")) {
+                this.pushBlock("KAZNA", this.addr, 50, "AI_REWARD");
+                alert("ИИ подтвердил вашу пользу! +50 MZR");
+                document.getElementById('ai-code').value = '';
+            } else {
+                alert("Код не прошел проверку ИИ.");
+            }
+        },
+
+        mint() {
+            const amt = parseFloat(document.getElementById('mint-amt').value);
+            if(isNaN(amt) || amt <= 0) return;
+            this.pushBlock("KAZNA", this.addr, amt, "MINTING");
+            alert("Эмиссия проведена.");
         },
 
         pushBlock(from, to, amt, type) {
-            const last = this.chain[this.chain.length-1];
-            const hash = btoa(Math.random() + Date.now()).slice(0,16);
-            db.set({ idx: this.chain.length, from, to, amt, type, hash, prev: last ? last.hash : "0" });
+            const h = Math.random().toString(36).slice(2) + Date.now();
+            mzrNet.get(h).put({ from, to, amt, type, h, ts: Date.now() });
         },
 
-        // --- МАЙНИНГ (ОПТИМИЗИРОВАННЫЙ) ---
-        toggleMining() {
-            this.isMining = !this.isMining;
-            document.getElementById('mine-btn').innerText = this.isMining ? "Майнинг: ON" : "Майнинг: OFF";
-            document.getElementById('mine-ui').style.display = this.isMining ? "block" : "none";
-            if(this.isMining) this.loopMine();
-        },
-
-        loopMine() {
-            if(!this.isMining) return;
-            const target = "000"; // Сложность
-            let nonce = 0;
-            const run = () => {
-                if(!this.isMining) return;
-                for(let i=0; i<300; i++) { // Проверяем 300 хешей за раз, чтобы не вешать UI
-                    const h = btoa("MINE" + nonce + this.chain.length).slice(0, 16);
-                    if(h.startsWith(target)) {
-                        this.pushBlock("SYSTEM", this.addr, 50, "BLOCK_REWARD");
-                        document.getElementById('hash-view').innerText = "SUCCESS: " + h;
-                        setTimeout(() => this.loopMine(), 1000); 
-                        return;
-                    }
-                    nonce++;
-                }
-                document.getElementById('hash-view').innerText = btoa(nonce).slice(0,20);
-                document.getElementById('nonce-count').innerText = nonce;
-                setTimeout(run, 1); // Даем браузеру отрисовать кадр
-            };
-            run();
-        },
-
-        // --- СКРЫТАЯ АДМИНКА ---
-        adminClick() {
-            this.clickCount++;
-            if(this.clickCount >= 5) {
-                const code = prompt("Введите код доступа к ROOT:");
-                if(code === "ROOT77") {
-                    document.getElementById('admin-modal').style.display = 'flex';
-                } else {
-                    alert("Отказ в доступе.");
-                    this.clickCount = 0;
-                }
-            }
-            setTimeout(() => { if(this.clickCount < 5) this.clickCount = 0; }, 2000);
-        },
-
-        adminGive() {
-            const val = parseFloat(document.getElementById('adm-give-amt').value);
-            this.pushBlock("ROOT", this.addr, val, "ROOT_EMISSION");
-            alert("Эмиссия проведена успешно!");
-        },
-
-        closeAdmin() {
-            document.getElementById('admin-modal').style.display = 'none';
-            this.clickCount = 0;
-        }
+        closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
     };
+
+    app.init();
 </script>
+
 </body>
 </html>
