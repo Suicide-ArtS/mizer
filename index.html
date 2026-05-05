@@ -58,9 +58,18 @@
 
 <script>
 // --- КОНФИГУРАЦИЯ sbClient ---
-const SB_URL = "https://gtjaowwsticjjtfcsnqh.sbClient.co";
+// --- КОНФИГУРАЦИЯ SUPABASE ---
+const SB_URL = "https://gtjaowwsticjjtfcsnqh.supabase.co"; 
 const SB_KEY = "sb_publishable_8MLW3dNFanVIYCv2PA_lKg_y0_aPuGN";
-const sbClient = window.sbClient.createClient(SB_URL, SB_KEY);
+
+let supabase;
+
+// Проверяем, загрузилась ли библиотека, прежде чем создавать клиента
+if (window.supabase) {
+    supabase = window.supabase.createClient(SB_URL, SB_KEY);
+} else {
+    console.error("Supabase library not loaded! Проверь интернет или VPN.");
+}
     
 const tg = window.Telegram.WebApp;
 tg.expand();
