@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mizer OS | Immortal V10</title>
+    <title>Mizer OS | Cloud V11</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --bg: #0a0a0c; --card: #141417; --cyan: #00d2ff; --gold: #f2a900; --text: #e0e0e0; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
-        .logo { width: 70px; height: 70px; background: linear-gradient(135deg, #1f6feb, var(--cyan)); border-radius: 20px; margin: 10px auto; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 900; color: #fff; cursor: pointer; }
-        .bal-val { font-size: 40px; font-weight: 800; text-align: center; margin: 10px 0; letter-spacing: -1px; }
-        .addr-badge { background: #1c1c21; padding: 10px; border-radius: 12px; font-family: monospace; font-size: 11px; text-align: center; color: var(--cyan); border: 1px solid #2d2d35; margin-bottom: 20px; word-break: break-all; cursor: copy; }
+        :root { --bg: #0a0a0c; --card: #141417; --cyan: #00d2ff; --gold: #f2a900; --text: #e0e0e0; --accent: #1f6feb; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        .logo { width: 70px; height: 70px; background: linear-gradient(135deg, var(--accent), var(--cyan)); border-radius: 20px; margin: 10px auto; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 900; color: #fff; cursor: pointer; }
+        .bal-val { font-size: 45px; font-weight: 800; text-align: center; margin: 10px 0; }
+        .addr-badge { background: #1c1c21; padding: 10px; border-radius: 12px; font-family: monospace; font-size: 11px; text-align: center; color: var(--cyan); border: 1px solid #2d2d35; margin-bottom: 20px; cursor: pointer; }
         .card { background: var(--card); border-radius: 20px; padding: 18px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
-        .terminal { background: #000; border-radius: 12px; padding: 12px; font-family: monospace; color: var(--cyan); font-size: 13px; min-height: 50px; margin-bottom: 12px; border: 1px solid rgba(0, 210, 255, 0.2); }
+        .terminal { background: #000; border-radius: 12px; padding: 12px; font-family: monospace; color: var(--cyan); font-size: 13px; min-height: 40px; margin-bottom: 10px; border: 1px solid rgba(0, 210, 255, 0.2); }
         input { width: 100%; background: #1c1c21; border: 1px solid #2d2d35; border-radius: 12px; padding: 14px; color: #fff; margin-bottom: 10px; box-sizing: border-box; outline: none; }
-        .btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .btn-blue { background: #1f6feb; color: #fff; }
+        .btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-weight: 700; cursor: pointer; }
+        .btn-blue { background: var(--accent); color: #fff; }
         .btn-gold { background: var(--gold); color: #000; }
         #admin-screen { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 1000; padding: 25px; overflow-y: auto; }
         .stat-line { font-family: monospace; font-size: 13px; padding: 10px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; }
@@ -24,154 +24,143 @@
 </head>
 <body>
 
-<div id="app">
+<div id="ui">
     <div class="logo" id="main-logo">M</div>
     <div class="bal-val" id="bal-view">0.00</div>
-    <div style="text-align:center; font-size:12px; color:var(--gold); font-weight:bold; margin-bottom:10px;">MIZER CORE</div>
-    
-    <div class="addr-badge" id="addr-display" onclick="mzr.copyAddr()">MZR-LOADING...</div>
+    <div class="addr-badge" id="addr-display" onclick="app.copyAddr()">MZR-CONNECTING...</div>
     
     <div class="card">
-        <div class="terminal" id="ai-out">Система стабилизирована. Ожидаю данные...</div>
-        <input type="text" id="ai-in" placeholder="Отчет за сегодня...">
-        <button class="btn btn-gold" onclick="mzr.askAI()">Отправить в ИИ</button>
+        <div class="terminal" id="ai-status">Облако подключено.</div>
+        <input type="text" id="ai-input" placeholder="Отчет для ИИ...">
+        <button class="btn btn-gold" onclick="app.askAI()">Отправить</button>
     </div>
 
     <div class="card">
-        <input type="text" id="to-addr" placeholder="Адрес получателя">
-        <input type="number" id="to-amt" placeholder="Сумма">
-        <button class="btn btn-blue" onclick="mzr.send()">Перевести</button>
+        <input type="text" id="send-to" placeholder="MZR-адрес получателя">
+        <input type="number" id="send-amt" placeholder="Сумма">
+        <button class="btn btn-blue" onclick="app.transfer()">Перевести</button>
     </div>
 </div>
 
 <div id="admin-screen">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h2 style="color:var(--gold); margin:0;">SYSTEM ROOT</h2>
-        <button onclick="mzr.toggleAdmin()" style="color:#ff4444; background:none; border:none; font-weight:bold;">ВЫХОД</button>
+        <h2 style="color:var(--gold); margin:0;">CLOUD ROOT</h2>
+        <button onclick="app.toggleAdmin()" style="color:#ff4444; background:none; border:none; font-weight:bold;">ЗАКРЫТЬ</button>
     </div>
-    
-    <div class="card" id="admin-stats"></div>
-
+    <div class="card" id="stats"></div>
     <div class="card">
-        <input type="number" id="mint-amt" placeholder="Количество">
-        <button class="btn btn-gold" onclick="mzr.mint()">Создать монеты</button>
+        <input type="number" id="mint-amt" placeholder="Сумма">
+        <button class="btn btn-gold" onclick="app.mint()">Напечатать монеты</button>
     </div>
 </div>
 
 <script>
+// --- КОНФИГУРАЦИЯ SUPABASE ---
+const SB_URL = "https://gtjaowwsticjjtfcsnqh.supabase.co"; 
+const SB_KEY = "sb_publishable_8MlW3dNFanVIYCv2PA_lkg_y0_aPuGN";
+const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+
 const tg = window.Telegram.WebApp;
 
-// Список пиров (добавил больше)
-const gun = Gun({
-    peers: [
-        'https://gun-manhattan.herokuapp.com/gun',
-        'https://peer.wall.org/gun',
-        'https://gundb.com.br/gun',
-        'https://gunjs.herokuapp.com/gun'
-    ],
-    localStorage: true // ВКЛЮЧАЕМ принудительное сохранение в браузере
-});
-
-const core = gun.get('mizer_v10_prod');
-const registry = gun.get('mizer_v10_users');
-
-const mzr = {
+const app = {
     id: '',
-    db: {},
-    users: {},
+    transactions: [],
+    users_count: 0,
     taps: 0,
 
-    init() {
-        // 1. Пытаемся взять ID из памяти, если нет — из TG, если нет — генерим
-        let savedId = localStorage.getItem('mizer_addr');
-        if (savedId) {
-            this.id = savedId;
-        } else {
-            this.id = "MZR-" + (tg.initDataUnsafe.user?.id || Math.floor(Math.random()*1000000));
-            localStorage.setItem('mizer_addr', this.id);
-        }
-
+    async init() {
+        // 1. Инициализация ID (из памяти или TG)
+        this.id = localStorage.getItem('mzr_id') || "MZR-" + (tg.initDataUnsafe.user?.id || Math.floor(Math.random()*100000));
+        localStorage.setItem('mzr_id', this.id);
         document.getElementById('addr-display').innerText = this.id;
-        
-        // Регистрируемся в сети
-        registry.get(this.id).put({ active: true, ts: Date.now() });
 
-        // Слушаем транзакции
-        core.map().on((tx, id) => {
-            if(tx && tx.h) {
-                this.db[tx.h] = tx;
-                this.recalc();
-            }
-        });
+        // 2. Регистрация в БД
+        await supabase.from('profiles').upsert({ id: this.id, last_seen: new Date() });
 
-        // Слушаем пользователей
-        registry.map().on((v, k) => {
-            if(v && k) this.users[k] = v;
-            this.recalc();
-        });
+        // 3. Подписка на обновления (Realtime!)
+        supabase.channel('any')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => this.loadData())
+            .subscribe();
 
-        // Секрет админки (5 тапов за 2 сек)
+        // 4. Первичная загрузка
+        await this.loadData();
+
+        // Лого-клики для админки
         document.getElementById('main-logo').onclick = () => {
             this.taps++;
             if(this.taps >= 5) {
-                if(prompt("PASSWORD:") === "mizer77") this.toggleAdmin();
+                if(prompt("PASS:") === "mizer77") this.toggleAdmin();
                 this.taps = 0;
             }
-            setTimeout(() => this.taps = 0, 2000);
         };
-        
-        this.recalc();
     },
 
-    recalc() {
-        let b = 0, s = 0, txs = 0;
-        Object.values(this.db).forEach(tx => {
-            const a = parseFloat(tx.amt) || 0;
-            if(tx.from === "KAZNA") s += a;
-            if(tx.to === this.id) b += a;
-            if(tx.from === this.id) b -= a;
-            txs++;
+    async loadData() {
+        // Загружаем все транзакции
+        const { data: txs } = await supabase.from('transactions').select('*');
+        this.transactions = txs || [];
+
+        // Считаем количество пользователей
+        const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+        this.users_count = count;
+
+        this.render();
+    },
+
+    render() {
+        let bal = 0, supply = 0;
+        this.transactions.forEach(tx => {
+            const a = parseFloat(tx.amount);
+            if(tx.from_addr === "KAZNA") supply += a;
+            if(tx.to_addr === this.id) bal += a;
+            if(tx.from_addr === this.id) bal -= a;
         });
 
-        document.getElementById('bal-view').innerText = b.toFixed(2);
+        document.getElementById('bal-view').innerText = bal.toFixed(2);
         
-        const stats = document.getElementById('admin-stats');
+        const stats = document.getElementById('stats');
         if(stats) {
             stats.innerHTML = `
-                <div class="stat-line"><span>МОНЕТ В СЕТИ:</span> <b>${s.toFixed(2)}</b></div>
-                <div class="stat-line"><span>УЗЛОВ (NODES):</span> <b>${Object.keys(this.users).length}</b></div>
-                <div class="stat-line"><span>ТРАНЗАКЦИЙ:</span> <b>${txs}</b></div>
-                <div class="stat-line" style="color:var(--cyan)"><span>ВАШ АДРЕС:</span> <b>${this.id}</b></div>
+                <div class="stat-line"><span>СЕТЕВАЯ ЭМИССИЯ:</span> <b>${supply.toFixed(2)}</b></div>
+                <div class="stat-line"><span>ЖИВЫХ УЗЛОВ:</span> <b>${this.users_count}</b></div>
+                <div class="stat-line"><span>ВСЕГО ТРАНЗАКЦИЙ:</span> <b>${this.transactions.length}</b></div>
             `;
         }
     },
 
-    send() {
-        const to = document.getElementById('to-addr').value.trim();
-        const amt = parseFloat(document.getElementById('to-amt').value);
-        if(!this.users[to]) return alert("Адрес не найден в сети!");
-        if(amt <= 0 || amt > parseFloat(document.getElementById('bal-view').innerText)) return alert("Ошибка суммы!");
+    async transfer() {
+        const to = document.getElementById('send-to').value.trim();
+        const amt = parseFloat(document.getElementById('send-amt').value);
+        const myBal = parseFloat(document.getElementById('bal-view').innerText);
 
-        this.push(this.id, to, amt, "SEND");
-        alert("Успешно!");
+        if(amt > myBal || amt <= 0) return alert("Недостаточно средств");
+
+        await supabase.from('transactions').insert([
+            { from_addr: this.id, to_addr: to, amount: amt, type: 'transfer' }
+        ]);
+        
+        alert("Перевод выполнен!");
+        document.getElementById('send-amt').value = '';
     },
 
-    mint() {
-        const a = parseFloat(document.getElementById('mint-amt').value);
-        if(a > 0) this.push("KAZNA", this.id, a, "MINT");
+    async mint() {
+        const amt = parseFloat(document.getElementById('mint-amt').value);
+        if(amt > 0) {
+            await supabase.from('transactions').insert([
+                { from_addr: "KAZNA", to_addr: this.id, amount: amt, type: 'mint' }
+            ]);
+            alert("Эмиссия успешна!");
+        }
     },
 
-    push(f, t, a, type) {
-        const h = 'h' + Math.random().toString(36).substr(2, 9) + Date.now();
-        core.get(h).put({ from: f, to: t, amt: a, h: h, type: type });
-    },
-
-    askAI() {
-        const i = document.getElementById('ai-in');
-        if(!i.value) return;
-        this.push("KAZNA", this.id, 5, "REWARD");
-        document.getElementById('ai-out').innerText = "Начислено 5.00 MZR за активность!";
-        i.value = '';
+    async askAI() {
+        const inp = document.getElementById('ai-input');
+        if(!inp.value) return;
+        await supabase.from('transactions').insert([
+            { from_addr: "KAZNA", to_addr: this.id, amount: 10, type: 'reward' }
+        ]);
+        document.getElementById('ai-status').innerText = "Награда +10 MZR зачислена!";
+        inp.value = '';
     },
 
     copyAddr() {
@@ -185,7 +174,186 @@ const mzr = {
     }
 };
 
-mzr.init();
+app.init();
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mizer OS | Cloud V11</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --bg: #0a0a0c; --card: #141417; --cyan: #00d2ff; --gold: #f2a900; --text: #e0e0e0; --accent: #1f6feb; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        .logo { width: 70px; height: 70px; background: linear-gradient(135deg, var(--accent), var(--cyan)); border-radius: 20px; margin: 10px auto; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 900; color: #fff; cursor: pointer; }
+        .bal-val { font-size: 45px; font-weight: 800; text-align: center; margin: 10px 0; }
+        .addr-badge { background: #1c1c21; padding: 10px; border-radius: 12px; font-family: monospace; font-size: 11px; text-align: center; color: var(--cyan); border: 1px solid #2d2d35; margin-bottom: 20px; cursor: pointer; }
+        .card { background: var(--card); border-radius: 20px; padding: 18px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .terminal { background: #000; border-radius: 12px; padding: 12px; font-family: monospace; color: var(--cyan); font-size: 13px; min-height: 40px; margin-bottom: 10px; border: 1px solid rgba(0, 210, 255, 0.2); }
+        input { width: 100%; background: #1c1c21; border: 1px solid #2d2d35; border-radius: 12px; padding: 14px; color: #fff; margin-bottom: 10px; box-sizing: border-box; outline: none; }
+        .btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-weight: 700; cursor: pointer; }
+        .btn-blue { background: var(--accent); color: #fff; }
+        .btn-gold { background: var(--gold); color: #000; }
+        #admin-screen { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 1000; padding: 25px; overflow-y: auto; }
+        .stat-line { font-family: monospace; font-size: 13px; padding: 10px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div class="logo" id="main-logo">M</div>
+    <div class="bal-val" id="bal-view">0.00</div>
+    <div class="addr-badge" id="addr-display" onclick="app.copyAddr()">MZR-CONNECTING...</div>
+    
+    <div class="card">
+        <div class="terminal" id="ai-status">Облако подключено.</div>
+        <input type="text" id="ai-input" placeholder="Отчет для ИИ...">
+        <button class="btn btn-gold" onclick="app.askAI()">Отправить</button>
+    </div>
+
+    <div class="card">
+        <input type="text" id="send-to" placeholder="MZR-адрес получателя">
+        <input type="number" id="send-amt" placeholder="Сумма">
+        <button class="btn btn-blue" onclick="app.transfer()">Перевести</button>
+    </div>
+</div>
+
+<div id="admin-screen">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="color:var(--gold); margin:0;">CLOUD ROOT</h2>
+        <button onclick="app.toggleAdmin()" style="color:#ff4444; background:none; border:none; font-weight:bold;">ЗАКРЫТЬ</button>
+    </div>
+    <div class="card" id="stats"></div>
+    <div class="card">
+        <input type="number" id="mint-amt" placeholder="Сумма">
+        <button class="btn btn-gold" onclick="app.mint()">Напечатать монеты</button>
+    </div>
+</div>
+
+<script>
+// --- КОНФИГУРАЦИЯ SUPABASE ---
+const SB_URL = "YOUR_SUPABASE_URL"; 
+const SB_KEY = "YOUR_SUPABASE_ANON_KEY";
+const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+
+const tg = window.Telegram.WebApp;
+
+const app = {
+    id: '',
+    transactions: [],
+    users_count: 0,
+    taps: 0,
+
+    async init() {
+        // 1. Инициализация ID (из памяти или TG)
+        this.id = localStorage.getItem('mzr_id') || "MZR-" + (tg.initDataUnsafe.user?.id || Math.floor(Math.random()*100000));
+        localStorage.setItem('mzr_id', this.id);
+        document.getElementById('addr-display').innerText = this.id;
+
+        // 2. Регистрация в БД
+        await supabase.from('profiles').upsert({ id: this.id, last_seen: new Date() });
+
+        // 3. Подписка на обновления (Realtime!)
+        supabase.channel('any')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => this.loadData())
+            .subscribe();
+
+        // 4. Первичная загрузка
+        await this.loadData();
+
+        // Лого-клики для админки
+        document.getElementById('main-logo').onclick = () => {
+            this.taps++;
+            if(this.taps >= 5) {
+                if(prompt("PASS:") === "mizer77") this.toggleAdmin();
+                this.taps = 0;
+            }
+        };
+    },
+
+    async loadData() {
+        // Загружаем все транзакции
+        const { data: txs } = await supabase.from('transactions').select('*');
+        this.transactions = txs || [];
+
+        // Считаем количество пользователей
+        const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+        this.users_count = count;
+
+        this.render();
+    },
+
+    render() {
+        let bal = 0, supply = 0;
+        this.transactions.forEach(tx => {
+            const a = parseFloat(tx.amount);
+            if(tx.from_addr === "KAZNA") supply += a;
+            if(tx.to_addr === this.id) bal += a;
+            if(tx.from_addr === this.id) bal -= a;
+        });
+
+        document.getElementById('bal-view').innerText = bal.toFixed(2);
+        
+        const stats = document.getElementById('stats');
+        if(stats) {
+            stats.innerHTML = `
+                <div class="stat-line"><span>СЕТЕВАЯ ЭМИССИЯ:</span> <b>${supply.toFixed(2)}</b></div>
+                <div class="stat-line"><span>ЖИВЫХ УЗЛОВ:</span> <b>${this.users_count}</b></div>
+                <div class="stat-line"><span>ВСЕГО ТРАНЗАКЦИЙ:</span> <b>${this.transactions.length}</b></div>
+            `;
+        }
+    },
+
+    async transfer() {
+        const to = document.getElementById('send-to').value.trim();
+        const amt = parseFloat(document.getElementById('send-amt').value);
+        const myBal = parseFloat(document.getElementById('bal-view').innerText);
+
+        if(amt > myBal || amt <= 0) return alert("Недостаточно средств");
+
+        await supabase.from('transactions').insert([
+            { from_addr: this.id, to_addr: to, amount: amt, type: 'transfer' }
+        ]);
+        
+        alert("Перевод выполнен!");
+        document.getElementById('send-amt').value = '';
+    },
+
+    async mint() {
+        const amt = parseFloat(document.getElementById('mint-amt').value);
+        if(amt > 0) {
+            await supabase.from('transactions').insert([
+                { from_addr: "KAZNA", to_addr: this.id, amount: amt, type: 'mint' }
+            ]);
+            alert("Эмиссия успешна!");
+        }
+    },
+
+    async askAI() {
+        const inp = document.getElementById('ai-input');
+        if(!inp.value) return;
+        await supabase.from('transactions').insert([
+            { from_addr: "KAZNA", to_addr: this.id, amount: 10, type: 'reward' }
+        ]);
+        document.getElementById('ai-status').innerText = "Награда +10 MZR зачислена!";
+        inp.value = '';
+    },
+
+    copyAddr() {
+        navigator.clipboard.writeText(this.id);
+        alert("Адрес скопирован!");
+    },
+
+    toggleAdmin() {
+        const s = document.getElementById('admin-screen');
+        s.style.display = (s.style.display === 'block') ? 'none' : 'block';
+    }
+};
+
+app.init();
 </script>
 </body>
 </html>
