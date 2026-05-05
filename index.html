@@ -60,8 +60,6 @@
 // --- КОНФИГУРАЦИЯ SUPABASE ---
 const SB_URL = "https://gtjaowwsticjjtfcsnqh.supabase.co"; 
 const SB_KEY = "sb_publishable_8MLW3dNFanVIYCv2PA_lKg_y0_aPuGN";
-
-// Важно: создаем клиента только ОДИН раз
 const supabase = window.supabase.createClient(SB_URL, SB_KEY);
 
 const tg = window.Telegram.WebApp;
