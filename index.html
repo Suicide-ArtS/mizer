@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mizer OS | Cloud Final</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@sbClient/sbClient-js@2"></script>
     <style>
         :root { --bg: #0a0a0c; --card: #141417; --cyan: #00d2ff; --gold: #f2a900; --text: #e0e0e0; --accent: #1f6feb; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; overflow-x: hidden; }
@@ -57,11 +57,11 @@
 </div>
 
 <script>
-// --- КОНФИГУРАЦИЯ SUPABASE ---
-const SB_URL = "https://gtjaowwsticjjtfcsnqh.supabase.co"; 
+// --- КОНФИГУРАЦИЯ sbClient ---
+const SB_URL = "https://gtjaowwsticjjtfcsnqh.sbClient.co";
 const SB_KEY = "sb_publishable_8MLW3dNFanVIYCv2PA_lKg_y0_aPuGN";
-const supabase = window.supabase.createClient(SB_URL, SB_KEY);
-
+const sbClient = window.sbClient.createClient(SB_URL, SB_KEY);
+    
 const tg = window.Telegram.WebApp;
 tg.expand();
 
@@ -79,14 +79,14 @@ const app = {
 
         // 2. Регистрация в БД
         try {
-            await supabase.from('profiles').upsert({ id: this.id, last_seen: new Date() });
+            await sbClient.from('profiles').upsert({ id: this.id, last_seen: new Date() });
             console.log("Connected to Cloud");
         } catch(e) {
             console.error("Cloud Error:", e);
         }
 
         // 3. Realtime подписка
-        supabase.channel('mizer_live')
+        sbClient.channel('mizer_live')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => this.loadData())
             .subscribe();
 
@@ -105,10 +105,10 @@ const app = {
     },
 
     async loadData() {
-        const { data: txs } = await supabase.from('transactions').select('*');
+        const { data: txs } = await sbClient.from('transactions').select('*');
         this.transactions = txs || [];
 
-        const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+        const { count } = await sbClient.from('profiles').select('*', { count: 'exact', head: true });
         this.users_count = count || 0;
 
         this.render();
@@ -143,7 +143,7 @@ const app = {
         if(!to.startsWith("MZR-")) return alert("Неверный формат адреса");
         if(amt > myBal || amt <= 0) return alert("Недостаточно средств");
 
-        const { error } = await supabase.from('transactions').insert([
+        const { error } = await sbClient.from('transactions').insert([
             { from_addr: this.id, to_addr: to, amount: amt, type: 'transfer' }
         ]);
 
@@ -158,7 +158,7 @@ const app = {
     async mint() {
         const amt = parseFloat(document.getElementById('mint-amt').value);
         if(amt > 0) {
-            await supabase.from('transactions').insert([
+            await sbClient.from('transactions').insert([
                 { from_addr: "KAZNA", to_addr: this.id, amount: amt, type: 'mint' }
             ]);
             alert("Эмиссия успешна!");
@@ -172,7 +172,7 @@ const app = {
         document.getElementById('ai-status').innerText = "Оракул обрабатывает...";
         
         setTimeout(async () => {
-            await supabase.from('transactions').insert([
+            await sbClient.from('transactions').insert([
                 { from_addr: "KAZNA", to_addr: this.id, amount: 10, type: 'reward' }
             ]);
             document.getElementById('ai-status').innerText = "Награда +10 MZR получена!";
