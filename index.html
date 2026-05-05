@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mizer OS | Cloud Final</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@sbClient/sbClient-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --bg: #0a0a0c; --card: #141417; --cyan: #00d2ff; --gold: #f2a900; --text: #e0e0e0; --accent: #1f6feb; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; overflow-x: hidden; }
@@ -57,20 +57,14 @@
 </div>
 
 <script>
-// --- КОНФИГУРАЦИЯ sbClient ---
-// --- КОНФИГУРАЦИЯ SUPABASE ---
 const SB_URL = "https://gtjaowwsticjjtfcsnqh.supabase.co"; 
 const SB_KEY = "sb_publishable_8MLW3dNFanVIYCv2PA_lKg_y0_aPuGN";
 
-let supabase;
-
-// Проверяем, загрузилась ли библиотека, прежде чем создавать клиента
+let supabaseClient;
 if (window.supabase) {
-    supabase = window.supabase.createClient(SB_URL, SB_KEY);
-} else {
-    console.error("Supabase library not loaded! Проверь интернет или VPN.");
+    supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
 }
-    
+
 const tg = window.Telegram.WebApp;
 tg.expand();
 
@@ -81,28 +75,26 @@ const app = {
     taps: 0,
 
     async init() {
-        // 1. Идентификация
+        // Идентификация
         this.id = localStorage.getItem('mzr_id_v12') || "MZR-" + (tg.initDataUnsafe.user?.id || Math.floor(Math.random()*899999+100000));
         localStorage.setItem('mzr_id_v12', this.id);
         document.getElementById('addr-display').innerText = this.id;
 
-        // 2. Регистрация в БД
-        try {
-            await sbClient.from('profiles').upsert({ id: this.id, last_seen: new Date() });
-            console.log("Connected to Cloud");
-        } catch(e) {
-            console.error("Cloud Error:", e);
-        }
+        if (!supabaseClient) return console.error("Base connection failed");
 
-        // 3. Realtime подписка
-        sbClient.channel('mizer_live')
+        // Регистрация
+        try {
+            await supabaseClient.from('profiles').upsert({ id: this.id });
+        } catch(e) {}
+
+        // Подписка на обновления
+        supabaseClient.channel('mizer_live')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => this.loadData())
             .subscribe();
 
-        // 4. Загрузка данных
         await this.loadData();
 
-        // Админ-панель (5 кликов по лого)
+        // Админка: 5 кликов по лого
         document.getElementById('main-logo').onclick = () => {
             this.taps++;
             if(this.taps >= 5) {
@@ -114,10 +106,10 @@ const app = {
     },
 
     async loadData() {
-        const { data: txs } = await sbClient.from('transactions').select('*');
+        const { data: txs } = await supabaseClient.from('transactions').select('*');
         this.transactions = txs || [];
-
-        const { count } = await sbClient.from('profiles').select('*', { count: 'exact', head: true });
+        
+        const { count } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true });
         this.users_count = count || 0;
 
         this.render();
@@ -139,7 +131,7 @@ const app = {
             statsPanel.innerHTML = `
                 <div class="stat-line"><span>СЕТЕВАЯ ЭМИССИЯ:</span> <b>${supply.toFixed(2)} MZR</b></div>
                 <div class="stat-line"><span>ЖИВЫХ УЗЛОВ:</span> <b>${this.users_count}</b></div>
-                <div class="stat-line"><span>ТРАНЗАКЦИЙ В СЕТИ:</span> <b>${this.transactions.length}</b></div>
+                <div class="stat-line"><span>ТРАНЗАКЦИЙ:</span> <b>${this.transactions.length}</b></div>
             `;
         }
     },
@@ -149,28 +141,26 @@ const app = {
         const amt = parseFloat(document.getElementById('send-amt').value);
         const myBal = parseFloat(document.getElementById('bal-view').innerText);
 
-        if(!to.startsWith("MZR-")) return alert("Неверный формат адреса");
-        if(amt > myBal || amt <= 0) return alert("Недостаточно средств");
+        if(!to.startsWith("MZR-")) return alert("Ошибка адреса");
+        if(amt > myBal || amt <= 0) return alert("Мало монет");
 
-        const { error } = await sbClient.from('transactions').insert([
+        const { error } = await supabaseClient.from('transactions').insert([
             { from_addr: this.id, to_addr: to, amount: amt, type: 'transfer' }
         ]);
 
         if(!error) {
-            alert("Перевод выполнен!");
+            alert("Успешно!");
             document.getElementById('send-amt').value = '';
-        } else {
-            alert("Ошибка сети: " + error.message);
         }
     },
 
     async mint() {
         const amt = parseFloat(document.getElementById('mint-amt').value);
         if(amt > 0) {
-            await sbClient.from('transactions').insert([
+            await supabaseClient.from('transactions').insert([
                 { from_addr: "KAZNA", to_addr: this.id, amount: amt, type: 'mint' }
             ]);
-            alert("Эмиссия успешна!");
+            alert("Монеты созданы!");
         }
     },
 
@@ -178,20 +168,24 @@ const app = {
         const inp = document.getElementById('ai-input');
         if(!inp.value) return;
         
-        document.getElementById('ai-status').innerText = "Оракул обрабатывает...";
+        document.getElementById('ai-status').innerText = "Оракул думает...";
         
         setTimeout(async () => {
-            await sbClient.from('transactions').insert([
+            const { error } = await supabaseClient.from('transactions').insert([
                 { from_addr: "KAZNA", to_addr: this.id, amount: 10, type: 'reward' }
             ]);
-            document.getElementById('ai-status').innerText = "Награда +10 MZR получена!";
-            inp.value = '';
+            if (!error) {
+                document.getElementById('ai-status').innerText = "Награда +10 MZR получена!";
+                inp.value = '';
+            } else {
+                document.getElementById('ai-status').innerText = "Ошибка базы данных.";
+            }
         }, 1200);
     },
 
     copyAddr() {
         navigator.clipboard.writeText(this.id);
-        tg.HapticFeedback.notificationOccurred('success');
+        if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         alert("Адрес скопирован!");
     },
 
